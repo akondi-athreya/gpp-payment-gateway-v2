@@ -4,12 +4,15 @@ import com.example.gateway.models.CardNetwork;
 import org.springframework.stereotype.Service;
 
 import java.time.YearMonth;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.regex.Pattern;
 
 @Service
 public class ValidationService {
 
     private static final Pattern VPA_PATTERN = Pattern.compile("^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$");
+    private static final Pattern HTTP_SCHEME_PATTERN = Pattern.compile("^https?$");
 
     /**
      * Validate VPA (Virtual Payment Address) format for UPI
@@ -196,5 +199,37 @@ public class ValidationService {
         }
 
         return cleaned.substring(cleaned.length() - 4);
+    }
+
+    /**
+     * Validate payment amount is > 0.
+     */
+    public boolean validatePaymentAmount(long amount) {
+        return amount > 0;
+    }
+
+    /**
+     * Validate refund amount > 0 and does not exceed available amount.
+     */
+    public boolean validateRefundAmount(long refundAmount, long availableAmount) {
+        return refundAmount > 0 && refundAmount <= availableAmount;
+    }
+
+    /**
+     * Validate merchant webhook URL (http/https and well-formed).
+     */
+    public boolean validateWebhookUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return false;
+        }
+        try {
+            URI uri = new URI(url.trim());
+            if (uri.getScheme() == null || uri.getHost() == null) {
+                return false;
+            }
+            return HTTP_SCHEME_PATTERN.matcher(uri.getScheme().toLowerCase()).matches();
+        } catch (URISyntaxException e) {
+            return false;
+        }
     }
 }

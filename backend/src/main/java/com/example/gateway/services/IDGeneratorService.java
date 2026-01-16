@@ -1,25 +1,43 @@
 package com.example.gateway.services;
 
+import com.example.gateway.repositories.PaymentRepository;
+import com.example.gateway.repositories.RefundRepository;
 import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 
 @Service
 public class IDGeneratorService {
-    
+
     private static final String ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final SecureRandom random = new SecureRandom();
+
+    private final PaymentRepository paymentRepository;
+    private final RefundRepository refundRepository;
+
+    public IDGeneratorService(PaymentRepository paymentRepository, RefundRepository refundRepository) {
+        this.paymentRepository = paymentRepository;
+        this.refundRepository = refundRepository;
+    }
     
     /**
      * Generate payment ID: "pay_" + 16 alphanumeric characters
      */
     public String generatePaymentId() {
-        return "pay_" + generateRandomString(16);
+        String candidate;
+        do {
+            candidate = "pay_" + generateRandomString(16);
+        } while (paymentRepository.findById(candidate).isPresent());
+        return candidate;
     }
     /**
      * Generate refund ID: "rfnd_" + 16 alphanumeric characters
      */
     public String generateRefundId() {
-        return "rfnd_" + generateRandomString(16);
+        String candidate;
+        do {
+            candidate = "rfnd_" + generateRandomString(16);
+        } while (refundRepository.findById(candidate).isPresent());
+        return candidate;
     }
     
     /**
