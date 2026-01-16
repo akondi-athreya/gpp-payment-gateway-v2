@@ -66,19 +66,15 @@ public class RefundService {
         refund.setMerchant(merchant);
         refund.setPayment(payment);
         refund.setAmount(amount);
-        refund.setCurrency(payment.getCurrency());
         refund.setStatus("pending");
-        refund.setNotes(notes);
+        refund.setReason(notes);
         
         Refund savedRefund = refundRepository.save(refund);
         
         // Enqueue refund processing job
-        ProcessRefundJob job = new ProcessRefundJob();
-        job.setRefundId(savedRefund.getId());
-        job.setPaymentId(paymentId);
-        job.setMerchantId(merchant.getId());
-        
-        jobService.enqueueJob(job);
+        String jobId = "job_" + System.currentTimeMillis();
+        ProcessRefundJob job = new ProcessRefundJob(jobId, savedRefund.getId());
+        jobService.enqueueJob("process_refund", job, jobId);
         
         return savedRefund;
     }
@@ -93,7 +89,7 @@ public class RefundService {
         refund.setStatus(status);
         
         if ("completed".equals(status)) {
-            refund.setCompletedAt(java.time.OffsetDateTime.now());
+            refund.setProcessedAt(java.time.OffsetDateTime.now());
         }
         
         refundRepository.save(refund);
