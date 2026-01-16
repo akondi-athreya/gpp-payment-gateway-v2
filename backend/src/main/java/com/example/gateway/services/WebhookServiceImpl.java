@@ -87,6 +87,43 @@ public class WebhookServiceImpl implements WebhookService {
             logger.error("Error enqueueing webhook delivery for merchant: " + merchantId + ", event: " + event, e);
         }
     }
+
+    @Override
+    public String enqueueCustomWebhook(UUID merchantId, String event, JsonNode payload) {
+        try {
+            // Create webhook log entry
+            WebhookLog webhookLog = new WebhookLog();
+            webhookLog.setId(UUID.randomUUID().toString());
+            webhookLog.setEvent(event);
+            webhookLog.setPayload(payload);
+            webhookLog.setStatus(JobConstants.JOB_STATUS_PENDING);
+            webhookLog.setAttempts(0);
+            webhookLog.setCreatedAt(OffsetDateTime.now());
+
+            // Fetch merchant
+            Optional<Merchant> merchantOpt = merchantRepository.findById(merchantId);
+            if (!merchantOpt.isPresent()) {
+                logger.error("Merchant not found for ID: {}", merchantId);
+                return null;
+            }
+
+            Merchant merchant = merchantOpt.get();
+            webhookLog.setMerchant(merchant);
+
+            // Save webhook log
+            webhookLogRepository.save(webhookLog);
+
+            // Create and enqueue delivery job
+            String jobId = "wh_" + UUID.randomUUID().toString().substring(0, 16);
+            DeliverWebhookJob job = new DeliverWebhookJob(jobId, merchantId, event, payload);
+            jobService.enqueueJob(JobConstants.WEBHOOK_QUEUE, job, jobId);
+
+            return webhookLog.getId();
+        } catch (Exception e) {
+            logger.error("Error enqueueing custom webhook for merchant: " + merchantId + ", event: " + event, e);
+            return null;
+        }
+    }
     
     /**
      * Get webhook retry delay based on attempt number

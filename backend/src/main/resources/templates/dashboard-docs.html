@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API Documentation</title>
+    <style>
+        body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
+        header { background: linear-gradient(135deg, #0ea5e9, #2563eb); color: #fff; padding: 18px 24px; }
+        h1 { margin: 0; font-size: 22px; }
+        main { padding: 24px; max-width: 1000px; margin: 0 auto; }
+        .section { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; box-shadow: 0 6px 24px rgba(0,0,0,0.04); margin-bottom: 16px; }
+        pre { background: #0b1222; color: #d1e7ff; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+        code { font-family: "SFMono-Regular", Consolas, monospace; }
+        h2 { margin-top: 0; font-size: 18px; }
+        .muted { color: #6b7280; font-size: 13px; }
+        ul { padding-left: 18px; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>API Documentation</h1>
+</header>
+<main>
+    <div class="section">
+        <h2>1. Create Order</h2>
+        <p class="muted">Create an order before initiating payments.</p>
+        <pre><code>curl -X POST https://your-domain/api/v1/orders \ \
+  -H "Content-Type: application/json" \ \
+  -d '{
+    "order_id": "ord_123",
+    "amount": 5000,
+    "currency": "INR",
+    "description": "Test order"
+  }'</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>2. Create Payment (Async)</h2>
+        <p class="muted">Requires X-Api-Key and X-Api-Secret headers.</p>
+        <pre><code>curl -X POST https://your-domain/api/v1/payments \ \
+  -H "Content-Type: application/json" \ \
+  -H "X-Api-Key: &lt;api_key&gt;" \ \
+  -H "X-Api-Secret: &lt;api_secret&gt;" \ \
+  -H "Idempotency-Key: &lt;unique_key&gt;" \ \
+  -d '{
+    "order_id": "ord_123",
+    "method": "upi",
+    "vpa": "user@upi"
+  }'</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>3. Capture Payment</h2>
+        <pre><code>curl -X POST https://your-domain/api/v1/payments/pay_abc/capture \
+  -H "X-Api-Key: &lt;api_key&gt;" \
+  -H "X-Api-Secret: &lt;api_secret&gt;"</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>4. Refund Payment</h2>
+        <pre><code>curl -X POST https://your-domain/api/v1/payments/pay_abc/refunds \
+  -H "X-Api-Key: &lt;api_key&gt;" \
+  -H "X-Api-Secret: &lt;api_secret&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 2000,
+    "reason": "customer_request"
+  }'</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>5. SDK Integration</h2>
+        <p class="muted">Embed a simple checkout snippet.</p>
+        <pre><code>&lt;script src="https://your-domain/sdk.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const checkout = new PaymentGateway({ apiKey: '&lt;api_key&gt;' });
+  checkout.pay({ orderId: 'ord_123', amount: 5000, currency: 'INR' });
+&lt;/script&gt;</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>6. Webhook Verification</h2>
+        <p class="muted">Verify signature using HMAC-SHA256 and your webhook_secret.</p>
+        <pre><code>const crypto = require('crypto');
+
+function verifySignature(body, signature, secret) {
+  const digest = crypto
+    .createHmac('sha256', secret)
+    .update(body, 'utf8')
+    .digest('hex');
+  return digest === signature;
+}</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>7. Webhook Events</h2>
+        <ul>
+            <li><strong>payment.success</strong> — Fired when a payment succeeds</li>
+            <li><strong>payment.failed</strong> — Fired when a payment fails</li>
+            <li><strong>refund.processed</strong> — Fired when a refund is processed</li>
+        </ul>
+    </div>
+</main>
+</body>
+</html>
