@@ -43,6 +43,9 @@ public class PaymentResponse {
     @JsonProperty("error_description")
     private String errorDescription;
 
+    @JsonProperty("captured")
+    private Boolean captured;
+
     @JsonProperty("created_at")
     private OffsetDateTime createdAt;
 
@@ -165,6 +168,14 @@ public class PaymentResponse {
 
     public void setErrorDescription(String errorDescription) {
         this.errorDescription = errorDescription;
+    }
+
+    public Boolean getCaptured() {
+        return captured;
+    }
+
+    public void setCaptured(Boolean captured) {
+        this.captured = captured;
     }
 
     public OffsetDateTime getCreatedAt() {

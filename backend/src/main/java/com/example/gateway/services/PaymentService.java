@@ -300,4 +300,52 @@ public class PaymentService {
 
         return sb.toString();
     }
+
+    /**
+     * Create payment record with pending status for async processing
+     */
+    public Payment createPaymentAsync(Merchant merchant, String paymentId, String orderId, String method, String vpa) {
+        // Verify order exists and belongs to merchant
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            throw new IllegalArgumentException("NOT_FOUND_ERROR|Order not found");
+        }
+
+        Order order = orderOpt.get();
+        if (!order.getMerchant().getId().equals(merchant.getId())) {
+            throw new IllegalArgumentException("BAD_REQUEST_ERROR|Order does not belong to this merchant");
+        }
+
+        Payment payment = new Payment();
+        payment.setId(paymentId);
+        payment.setOrder(order);
+        payment.setMerchant(merchant);
+        payment.setAmount(order.getAmount());
+        payment.setCurrency(order.getCurrency());
+
+        OffsetDateTime now = OffsetDateTime.now();
+        payment.setCreatedAt(now);
+        payment.setUpdatedAt(now);
+
+        if ("upi".equalsIgnoreCase(method)) {
+            if (vpa == null || vpa.trim().isEmpty()) {
+                throw new IllegalArgumentException("BAD_REQUEST_ERROR|VPA is required for UPI payments");
+            }
+
+            if (!validationService.validateVPA(vpa)) {
+                throw new IllegalArgumentException("INVALID_VPA|Invalid VPA format");
+            }
+
+            payment.setMethod(PaymentMethod.UPI);
+            payment.setVpa(vpa);
+        } else if ("card".equalsIgnoreCase(method)) {
+            // For async creation without immediate card details, set method only
+            payment.setMethod(PaymentMethod.CARD);
+        } else {
+            throw new IllegalArgumentException("BAD_REQUEST_ERROR|Invalid payment method. Use 'upi' or 'card'");
+        }
+
+        payment.setStatus("pending");
+        return paymentRepository.save(payment);
+    }
 }

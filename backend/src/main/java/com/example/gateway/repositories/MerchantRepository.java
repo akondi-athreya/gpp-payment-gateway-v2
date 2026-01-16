@@ -10,6 +10,7 @@ import java.util.UUID;
 
 @Repository
 public interface MerchantRepository extends JpaRepository<Merchant, UUID> {
+    Optional<Merchant> findByApiKey(String apiKey);
     
     @Query("SELECT m FROM Merchant m WHERE m.apiKey = :apiKey AND m.apiSecret = :apiSecret")
     Optional<Merchant> findByApiKeyAndApiSecret(@Param("apiKey") String apiKey, @Param("apiSecret") String apiSecret);

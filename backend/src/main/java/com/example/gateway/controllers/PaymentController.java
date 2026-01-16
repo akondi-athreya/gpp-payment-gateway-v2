@@ -3,18 +3,49 @@ package com.example.gateway.controllers;
 import com.example.gateway.dto.CreatePaymentRequest;
 import com.example.gateway.dto.ErrorResponse;
 import com.example.gateway.dto.PaymentResponse;
+import com.example.gateway.jobs.JobConstants;
+import com.example.gateway.jobs.ProcessPaymentJob;
+import com.example.gateway.models.Merchant;
 import com.example.gateway.models.Payment;
+import com.example.gateway.repositories.IdempotencyKeyRepository;
+import com.example.gateway.repositories.PaymentRepository;
+import com.example.gateway.services.AuthenticationService;
+import com.example.gateway.services.IDGeneratorService;
+import com.example.gateway.jobs.JobServiceImpl;
 import com.example.gateway.services.PaymentService;
+import com.example.gateway.models.IdempotencyKey;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
 public class PaymentController {
 
     private final PaymentService paymentService;
+    
+    @Autowired
+    private AuthenticationService authenticationService;
+    
+    @Autowired
+    private IDGeneratorService idGeneratorService;
+    
+    @Autowired
+    private JobServiceImpl jobService;
+    
+    @Autowired
+    private IdempotencyKeyRepository idempotencyKeyRepository;
+    
+    @Autowired
+    private PaymentRepository paymentRepository;
+    
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public PaymentController(PaymentService paymentService) {
         this.paymentService = paymentService;
@@ -46,16 +77,42 @@ public class PaymentController {
     }
 
     /**
-     * POST /api/v1/payments - Create payment (Authenticated)
+     * POST /api/v1/payments - Create payment (Authenticated) - UPDATED for Deliverable 2
+     * Now supports idempotency keys and async processing
      * Requires X-Api-Key and X-Api-Secret headers
+     * Optional: Idempotency-Key header
      */
     @PostMapping("/api/v1/payments")
     public ResponseEntity<?> createPayment(
             @RequestHeader("X-Api-Key") String apiKey,
             @RequestHeader("X-Api-Secret") String apiSecret,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @RequestBody CreatePaymentRequest request) {
 
         try {
+            // Authenticate merchant
+            Merchant merchant = authenticationService.authenticateMerchant(apiKey, apiSecret);
+            
+            // Check idempotency key if provided
+            if (idempotencyKey != null && !idempotencyKey.isEmpty()) {
+                Optional<IdempotencyKey> existingKey = idempotencyKeyRepository.findByKeyAndMerchantId(
+                        idempotencyKey, merchant.getId()
+                );
+                
+                if (existingKey.isPresent()) {
+                    IdempotencyKey keyRecord = existingKey.get();
+                    // Check if not expired
+                    if (keyRecord.getExpiresAt().isAfter(OffsetDateTime.now())) {
+                        // Return cached response
+                        JsonNode cachedResponse = keyRecord.getResponse();
+                        return ResponseEntity.status(HttpStatus.CREATED).body(objectMapper.treeToValue(cachedResponse, Object.class));
+                    } else {
+                        // Key expired, delete it
+                        idempotencyKeyRepository.delete(keyRecord);
+                    }
+                }
+            }
+            
             // Validate request
             if (request.getOrderId() == null || request.getOrderId().isEmpty()) {
                 ErrorResponse errorResponse = new ErrorResponse("BAD_REQUEST_ERROR", "order_id is required");
@@ -66,39 +123,89 @@ public class PaymentController {
                 ErrorResponse errorResponse = new ErrorResponse("BAD_REQUEST_ERROR", "method is required");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
             }
-
-            // Extract card details if present
-            String cardNumber = null;
-            Integer expiryMonth = null;
-            Integer expiryYear = null;
-            String cvv = null;
-            String holderName = null;
-
-            if (request.getCard() != null) {
-                cardNumber = request.getCard().getNumber();
-                expiryMonth = request.getCard().getExpiryMonth();
-                expiryYear = request.getCard().getExpiryYear();
-                cvv = request.getCard().getCvv();
-                holderName = request.getCard().getHolderName();
-            }
-
-            // Create and process payment
-            Payment payment = paymentService.createAndProcessPayment(
-                    apiKey,
-                    apiSecret,
+            
+            // Create payment with status='pending' (async processing)
+            String paymentId = idGeneratorService.generatePaymentId();
+            Payment payment = paymentService.createPaymentAsync(
+                    merchant,
+                    paymentId,
                     request.getOrderId(),
                     request.getMethod(),
-                    request.getVpa(),
-                    cardNumber,
-                    cvv,
-                    holderName,
-                    expiryMonth,
-                    expiryYear
+                    request.getVpa()
             );
-
+            
+            // Enqueue ProcessPaymentJob
+            String jobId = "job_" + idGeneratorService.generateRandomString(12);
+            ProcessPaymentJob job = new ProcessPaymentJob(jobId, paymentId);
+            jobService.enqueueJob(JobConstants.PAYMENT_QUEUE, job, jobId);
+            
             // Build response
             PaymentResponse response = mapPaymentToResponse(payment);
+            
+            // Store in idempotency keys if key was provided
+            if (idempotencyKey != null && !idempotencyKey.isEmpty()) {
+                IdempotencyKey keyRecord = new IdempotencyKey();
+                keyRecord.setKey(idempotencyKey);
+                keyRecord.setMerchant(merchant);
+                keyRecord.setCreatedAt(OffsetDateTime.now());
+                keyRecord.setExpiresAt(OffsetDateTime.now().plusHours(24));
+                keyRecord.setResponse(objectMapper.valueToTree(response));
+                idempotencyKeyRepository.save(keyRecord);
+            }
+            
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (IllegalArgumentException e) {
+            return handleIllegalArgument(e);
+        } catch (Exception e) {
+            ErrorResponse errorResponse = new ErrorResponse("BAD_REQUEST_ERROR", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+    }
+    
+    /**
+     * POST /api/v1/payments/{payment_id}/capture - Capture payment (Authenticated) - NEW
+     * Only works on successful payments
+     * Requires X-Api-Key and X-Api-Secret headers
+     */
+    @PostMapping("/api/v1/payments/{payment_id}/capture")
+    public ResponseEntity<?> capturePayment(
+            @RequestHeader("X-Api-Key") String apiKey,
+            @RequestHeader("X-Api-Secret") String apiSecret,
+            @PathVariable("payment_id") String paymentId) {
+
+        try {
+            // Authenticate merchant
+            Merchant merchant = authenticationService.authenticateMerchant(apiKey, apiSecret);
+            
+            // Fetch payment
+            Optional<Payment> paymentOpt = paymentRepository.findById(paymentId);
+            if (!paymentOpt.isPresent()) {
+                ErrorResponse errorResponse = new ErrorResponse("NOT_FOUND_ERROR", "Payment not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            }
+            
+            Payment payment = paymentOpt.get();
+            
+            // Verify merchant ownership
+            if (!payment.getMerchant().getId().equals(merchant.getId())) {
+                ErrorResponse errorResponse = new ErrorResponse("BAD_REQUEST_ERROR", "Payment does not belong to this merchant");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            }
+            
+            // Verify payment is in capturable state (status='success')
+            if (!payment.getStatus().equals("success")) {
+                ErrorResponse errorResponse = new ErrorResponse("BAD_REQUEST_ERROR", "Payment not in capturable state");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            }
+            
+            // Set captured flag
+            payment.setCaptured(true);
+            paymentRepository.save(payment);
+            
+            // Return updated payment
+            PaymentResponse response = mapPaymentToResponse(payment);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
 
         } catch (IllegalArgumentException e) {
             return handleIllegalArgument(e);
@@ -243,6 +350,7 @@ public class PaymentController {
         response.setCardLast4(payment.getCardLast4());
         response.setErrorCode(payment.getErrorCode());
         response.setErrorDescription(payment.getErrorDescription());
+        response.setCaptured(payment.getCaptured());
         response.setCreatedAt(payment.getCreatedAt());
         response.setUpdatedAt(payment.getUpdatedAt());
         
