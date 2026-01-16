@@ -1,0 +1,406 @@
+### Payment Gateway API Testing
+### Test file for VS Code REST Client extension
+### https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+
+@baseUrl = http://localhost:8000
+@apiKey = key_test_abc123
+@apiSecret = secret_test_xyz789
+@webhookSecret = whsec_test_abc123
+
+# ==========================================
+# HEALTH & STATUS ENDPOINTS
+# ==========================================
+
+### 1. Health Check
+GET {{baseUrl}}/health
+
+### 2. Job Queue Status
+GET {{baseUrl}}/api/v1/test/jobs/status
+
+# ==========================================
+# ORDER ENDPOINTS
+# ==========================================
+
+### 3. Create Order
+POST {{baseUrl}}/api/v1/orders
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+{
+  "amount": 10000,
+  "currency": "INR",
+  "receipt": "rcpt_{{$timestamp}}"
+}
+
+### 4. Create Order with Notes
+POST {{baseUrl}}/api/v1/orders
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+{
+  "amount": 50000,
+  "currency": "INR",
+  "receipt": "rcpt_premium_{{$timestamp}}",
+  "notes": {
+    "customer_id": "cust_123",
+    "order_type": "premium_subscription"
+  }
+}
+
+### 5. Get Order (replace order_id with actual ID)
+GET {{baseUrl}}/api/v1/orders/order_test
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+# ==========================================
+# PAYMENT ENDPOINTS
+# ==========================================
+
+### 6. Create Payment - UPI
+POST {{baseUrl}}/api/v1/payments
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+Idempotency-Key: {{$uuid}}
+
+{
+  "order_id": "order_test",
+  "method": "upi",
+  "vpa": "user@okhdfcbank"
+}
+
+### 7. Create Payment - Card
+POST {{baseUrl}}/api/v1/payments
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+Idempotency-Key: {{$uuid}}
+
+{
+  "order_id": "order_test",
+  "method": "card",
+  "card": {
+    "number": "4111111111111111",
+    "expiry_month": 12,
+    "expiry_year": 25,
+    "cvv": "123",
+    "name": "John Doe"
+  }
+}
+
+### 8. Create Payment with Idempotency Key (test idempotency)
+@idempotencyKey = idempotent_key_{{$timestamp}}
+
+POST {{baseUrl}}/api/v1/payments
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+Idempotency-Key: {{idempotencyKey}}
+
+{
+  "order_id": "order_test",
+  "method": "upi",
+  "vpa": "user@paytm"
+}
+
+### 9. Repeat Payment with Same Idempotency Key (should return cached response)
+POST {{baseUrl}}/api/v1/payments
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+Idempotency-Key: {{idempotencyKey}}
+
+{
+  "order_id": "order_test",
+  "method": "upi",
+  "vpa": "user@paytm"
+}
+
+### 10. Get Payment Status (replace payment_id with actual ID)
+GET {{baseUrl}}/api/v1/payments/pay_test
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+### 11. Capture Payment (replace payment_id with actual ID)
+POST {{baseUrl}}/api/v1/payments/pay_test/capture
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+{
+  "amount": 10000
+}
+
+# ==========================================
+# REFUND ENDPOINTS
+# ==========================================
+
+### 12. Create Refund - Full Refund (replace payment_id with actual ID)
+POST {{baseUrl}}/api/v1/payments/pay_test/refunds
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+{
+  "amount": 10000,
+  "reason": "Customer requested refund"
+}
+
+### 13. Create Refund - Partial Refund (replace payment_id with actual ID)
+POST {{baseUrl}}/api/v1/payments/pay_test/refunds
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+{
+  "amount": 5000,
+  "reason": "Partial refund for damaged items"
+}
+
+### 14. Get Refund Status (replace refund_id with actual ID)
+GET {{baseUrl}}/api/v1/refunds/rfnd_test
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+# ==========================================
+# WEBHOOK ENDPOINTS
+# ==========================================
+
+### 15. List Webhooks
+GET {{baseUrl}}/api/v1/webhooks?limit=10&offset=0
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+### 16. List Webhooks with Pagination
+GET {{baseUrl}}/api/v1/webhooks?limit=5&offset=5
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+### 17. Retry Webhook (replace webhook_id with actual ID)
+POST {{baseUrl}}/api/v1/webhooks/webhook_test_id/retry
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+{}
+
+# ==========================================
+# ERROR SCENARIOS
+# ==========================================
+
+### 18. Create Order - Missing Required Field
+POST {{baseUrl}}/api/v1/orders
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+{
+  "currency": "INR"
+}
+
+### 19. Create Order - Invalid Amount (less than minimum)
+POST {{baseUrl}}/api/v1/orders
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+{
+  "amount": 50,
+  "currency": "INR"
+}
+
+### 20. Create Payment - Invalid Order ID
+POST {{baseUrl}}/api/v1/payments
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+{
+  "order_id": "invalid_order_id",
+  "method": "upi",
+  "vpa": "user@bank"
+}
+
+### 21. Get Payment - Non-existent Payment
+GET {{baseUrl}}/api/v1/payments/pay_nonexistent
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+### 22. Missing Authentication Header
+GET {{baseUrl}}/api/v1/orders/order_test
+
+### 23. Invalid Authentication Credentials
+GET {{baseUrl}}/api/v1/orders/order_test
+X-Api-Key: invalid_key
+X-Api-Secret: invalid_secret
+
+### 24. Create Refund - Exceeds Available Amount (replace payment_id with actual ID)
+POST {{baseUrl}}/api/v1/payments/pay_test/refunds
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+{
+  "amount": 999999999,
+  "reason": "Attempting to refund more than payment amount"
+}
+
+# ==========================================
+# DASHBOARD ENDPOINTS (if implemented)
+# ==========================================
+
+### 25. Get Dashboard Home
+GET {{baseUrl}}/dashboard
+Accept: text/html
+
+### 26. Get Webhook Configuration Page
+GET {{baseUrl}}/dashboard/webhooks
+Accept: text/html
+
+### 27. Get API Documentation Page
+GET {{baseUrl}}/dashboard/docs
+Accept: text/html
+
+# ==========================================
+# CHECKOUT ENDPOINTS
+# ==========================================
+
+### 28. Get Checkout Page
+GET http://localhost:3001/
+Accept: text/html
+
+### 29. Get Checkout SDK
+GET http://localhost:3001/checkout.js
+Accept: application/javascript
+
+### 30. Get Payment Iframe
+GET http://localhost:3001/iframe.html?order_id=order_test&embedded=true
+Accept: text/html
+
+# ==========================================
+# PERFORMANCE & STRESS TESTING
+# ==========================================
+
+### 31. Create Multiple Orders (Run 10 times with Ctrl+Alt+R)
+POST {{baseUrl}}/api/v1/orders
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+{
+  "amount": 10000,
+  "currency": "INR",
+  "receipt": "stress_test_{{$timestamp}}"
+}
+
+### 32. Sequential Order and Payment Flow
+# Step 1: Create Order
+@name createOrderFlow
+POST {{baseUrl}}/api/v1/orders
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+{
+  "amount": 25000,
+  "currency": "INR",
+  "receipt": "flow_test_{{$timestamp}}"
+}
+
+# Step 2: Extract order ID and create payment
+@orderId = {{createOrderFlow.response.body.id}}
+
+POST {{baseUrl}}/api/v1/payments
+Content-Type: application/json
+X-Api-Key: {{apiKey}}
+X-Api-Secret: {{apiSecret}}
+
+{
+  "order_id": {{orderId}},
+  "method": "upi",
+  "vpa": "test@okhdfcbank"
+}
+
+# ==========================================
+# WEBHOOK SIGNATURE VERIFICATION (Example)
+# ==========================================
+
+### 33. Mock Webhook Delivery (for local testing)
+# This would be sent FROM the payment gateway TO your merchant webhook endpoint
+# Headers should include: X-Webhook-Signature: <HMAC-SHA256 signature>
+
+POST http://localhost:4000/webhook
+Content-Type: application/json
+X-Webhook-Signature: a1b2c3d4e5f6...
+
+{
+  "event": "payment.success",
+  "timestamp": 1705315870,
+  "data": {
+    "payment": {
+      "id": "pay_H8sK3jD9s2L1pQr",
+      "order_id": "order_NXhj67fGH2jk9mPq",
+      "amount": 50000,
+      "currency": "INR",
+      "method": "upi",
+      "vpa": "user@paytm",
+      "status": "success",
+      "created_at": "2024-01-15T10:31:00Z"
+    }
+  }
+}
+
+# ==========================================
+# NOTES FOR TESTING
+# ==========================================
+#
+# 1. Replace placeholder IDs with actual IDs from responses
+#    - order_test → actual order ID from response
+#    - pay_test → actual payment ID from response
+#    - rfnd_test → actual refund ID from response
+#    - webhook_test_id → actual webhook ID from response
+#
+# 2. Idempotency Key Testing:
+#    - Run request #8 first to create a payment with idempotency key
+#    - Run request #9 immediately after
+#    - Should get identical response (cached)
+#    - Change only the Idempotency-Key value to test new request
+#
+# 3. For webhook testing:
+#    - Configure merchant webhook URL in dashboard
+#    - Set webhook secret in dashboard
+#    - Run payment flow which triggers webhook delivery
+#    - Check webhook logs in dashboard
+#    - Use request #17 to manually retry failed webhooks
+#
+# 4. Error Testing:
+#    - Requests #18-24 test various error conditions
+#    - Should return 400/401/404 with error messages
+#    - Verify error response format matches specification
+#
+# 5. Load Testing:
+#    - Use VS Code REST Client "Run All" feature
+#    - Or use request #31 repeatedly
+#    - Monitor API logs and job queue status
+#    - Check /api/v1/test/jobs/status for queue statistics
+#
+# 6. Dashboard Testing:
+#    - Access http://localhost:3000 in browser
+#    - Test webhook configuration form (request #26)
+#    - Test API documentation page (request #27)
+#    - Test manual webhook retry functionality
+#
+# 7. SDK Testing:
+#    - Include checkout.js in test HTML file
+#    - Create PaymentGateway instance with test credentials
+#    - Verify modal opens/closes correctly
+#    - Test success/failure callbacks with test mode
+#
+# 8. Debug Mode:
+#    - Use Ctrl+Alt+D to toggle debug mode in REST Client
+#    - Shows request/response details
+#    - Helpful for troubleshooting signature verification
+#    - Inspect actual headers and body content
+#
