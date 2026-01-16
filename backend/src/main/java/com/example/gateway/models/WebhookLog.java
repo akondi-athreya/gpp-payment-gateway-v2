@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
 public class WebhookLog {
     
     @Id
-    @GeneratedValue
+    @Column(columnDefinition = "varchar(255)")
     private String id;
     
     @ManyToOne

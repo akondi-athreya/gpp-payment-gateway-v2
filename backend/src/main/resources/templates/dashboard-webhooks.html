@@ -38,36 +38,36 @@
     <div class="card two-col">
         <div>
             <label>API Key</label>
-            <input id="apiKey" type="text" placeholder="Enter X-Api-Key" />
+            <input id="apiKey" type="text" placeholder="Enter X-Api-Key" data-test-id="api-key-input" />
         </div>
         <div>
             <label>API Secret</label>
-            <input id="apiSecret" type="password" placeholder="Enter X-Api-Secret" />
+            <input id="apiSecret" type="password" placeholder="Enter X-Api-Secret" data-test-id="api-secret-input" />
         </div>
     </div>
 
-    <div class="card two-col">
+    <div class="card two-col" data-test-id="webhook-config">
         <div>
             <label>Webhook URL</label>
-            <input id="webhookUrl" type="text" placeholder="https://example.com/webhooks" />
+            <input id="webhookUrl" type="text" placeholder="https://example.com/webhooks" data-test-id="webhook-url-input" />
             <div class="muted small">Save updates the merchant webhook_url</div>
         </div>
         <div>
             <label>Webhook Secret</label>
             <div class="flex">
-                <input id="webhookSecret" type="password" readonly />
-                <button id="copySecret" type="button">Copy</button>
-                <button id="regenSecret" type="button" class="secondary">Regenerate</button>
+                <input id="webhookSecret" type="password" readonly data-test-id="webhook-secret" />
+                <button id="copySecret" type="button" data-test-id="copy-secret-button">Copy</button>
+                <button id="regenSecret" type="button" class="secondary" data-test-id="regenerate-secret-button">Regenerate</button>
             </div>
         </div>
         <div class="flex">
-            <button id="saveConfig" type="button">Save Configuration</button>
-            <button id="testWebhook" type="button" class="secondary">Send Test Webhook</button>
+            <button id="saveConfig" type="button" data-test-id="save-webhook-button">Save Configuration</button>
+            <button id="testWebhook" type="button" class="secondary" data-test-id="test-webhook-button">Send Test Webhook</button>
         </div>
         <div class="muted" id="statusMsg"></div>
     </div>
 
-    <div class="card">
+    <div class="card" data-test-id="webhook-logs-section">
         <div class="flex" style="justify-content: space-between;">
             <div>
                 <strong>Webhook Logs</strong>
@@ -75,13 +75,13 @@
             </div>
             <div class="flex">
                 <label class="muted small">Limit</label>
-                <input id="limit" type="text" value="10" style="width:60px" />
+                <input id="limit" type="text" value="10" style="width:60px" data-test-id="webhook-logs-limit" />
                 <label class="muted small">Offset</label>
-                <input id="offset" type="text" value="0" style="width:60px" />
-                <button id="refreshLogs" type="button">Refresh</button>
+                <input id="offset" type="text" value="0" style="width:60px" data-test-id="webhook-logs-offset" />
+                <button id="refreshLogs" type="button" data-test-id="refresh-logs-button">Refresh</button>
             </div>
         </div>
-        <table>
+        <table data-test-id="webhook-logs-table">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -92,7 +92,7 @@
                     <th>Action</th>
                 </tr>
             </thead>
-            <tbody id="logsBody">
+            <tbody id="logsBody" data-test-id="webhook-logs-body">
                 <tr><td colspan="6" class="muted">No data yet</td></tr>
             </tbody>
         </table>
@@ -175,6 +175,8 @@
             }
             rows.forEach(item => {
                 const tr = document.createElement('tr');
+                tr.setAttribute('data-test-id', 'webhook-log-item');
+                tr.setAttribute('data-webhook-id', item.id);
                 const badgeClass = item.status === 'success' ? 'status-success' : item.status === 'failed' ? 'status-failed' : 'status-pending';
                 tr.innerHTML = `
                     <td>${item.id}</td>
@@ -183,7 +185,7 @@
                     <td>${item.attempts ?? 0}</td>
                     <td class="muted small">${item.last_attempt_at || ''}</td>
                     <td class="actions">
-                        <button type="button" data-id="${item.id}" class="retry-btn" ${item.status !== 'failed' ? 'disabled' : ''}>Retry</button>
+                        <button type="button" data-id="${item.id}" class="retry-btn" data-test-id="retry-webhook-button" ${item.status !== 'failed' ? 'disabled' : ''}>Retry</button>
                     </td>`;
                 body.appendChild(tr);
             });

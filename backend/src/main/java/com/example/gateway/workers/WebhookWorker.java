@@ -52,42 +52,45 @@ public class WebhookWorker {
         logger.info("Starting webhook delivery job: {}", job.getJobId());
         
         try {
-            // This is a simplified version - in production, you'd fetch webhook log by ID
-            // For now, we'll create a new delivery attempt
+            // Fetch existing webhook log by ID, or create new one
+            WebhookLog webhookLog = webhookLogRepository.findById(job.getJobId()).orElse(null);
             
-            // Fetch merchant details
-            Optional<Merchant> merchantOpt = merchantRepository.findById(job.getMerchantId());
-            if (!merchantOpt.isPresent()) {
-                logger.error("Merchant not found for ID: {}", job.getMerchantId());
-                return;
+            if (webhookLog == null) {
+                // First attempt - create webhook log entry
+                // Fetch merchant details
+                Optional<Merchant> merchantOpt = merchantRepository.findById(job.getMerchantId());
+                if (!merchantOpt.isPresent()) {
+                    logger.error("Merchant not found for ID: {}", job.getMerchantId());
+                    return;
+                }
+                
+                Merchant merchant = merchantOpt.get();
+                
+                // Check if webhook URL is configured
+                if (merchant.getWebhookUrl() == null || merchant.getWebhookUrl().isEmpty()) {
+                    logger.warn("Webhook URL not configured for merchant: {}", job.getMerchantId());
+                    return;
+                }
+                
+                // Check if webhook secret is configured
+                if (merchant.getWebhookSecret() == null || merchant.getWebhookSecret().isEmpty()) {
+                    logger.warn("Webhook secret not configured for merchant: {}", job.getMerchantId());
+                    return;
+                }
+                
+                // Create new webhook log
+                webhookLog = new WebhookLog();
+                webhookLog.setId(job.getJobId());
+                webhookLog.setMerchant(merchant);
+                webhookLog.setEvent(job.getEvent());
+                webhookLog.setPayload(job.getPayload());
+                webhookLog.setStatus(JobConstants.JOB_STATUS_PENDING);
+                webhookLog.setAttempts(0);
+                webhookLog.setCreatedAt(OffsetDateTime.now());
             }
-            
-            Merchant merchant = merchantOpt.get();
-            
-            // Check if webhook URL is configured
-            if (merchant.getWebhookUrl() == null || merchant.getWebhookUrl().isEmpty()) {
-                logger.warn("Webhook URL not configured for merchant: {}", job.getMerchantId());
-                return;
-            }
-            
-            // Check if webhook secret is configured
-            if (merchant.getWebhookSecret() == null || merchant.getWebhookSecret().isEmpty()) {
-                logger.warn("Webhook secret not configured for merchant: {}", job.getMerchantId());
-                return;
-            }
-            
-            // Create or fetch webhook log (simplified - create new entry for this delivery)
-            WebhookLog webhookLog = new WebhookLog();
-            webhookLog.setId(job.getJobId());
-            webhookLog.setMerchant(merchant);
-            webhookLog.setEvent(job.getEvent());
-            webhookLog.setPayload(job.getPayload());
-            webhookLog.setStatus(JobConstants.JOB_STATUS_PENDING);
-            webhookLog.setAttempts(0);
-            webhookLog.setCreatedAt(OffsetDateTime.now());
             
             // Deliver webhook
-            deliverWebhookAttempt(merchant, webhookLog, job);
+            deliverWebhookAttempt(webhookLog, job);
             
             logger.info("Webhook delivery job completed: {}", job.getJobId());
             
@@ -97,8 +100,10 @@ public class WebhookWorker {
         }
     }
     
-    private void deliverWebhookAttempt(Merchant merchant, WebhookLog webhookLog, DeliverWebhookJob job) {
+    private void deliverWebhookAttempt(WebhookLog webhookLog, DeliverWebhookJob job) {
         try {
+            Merchant merchant = webhookLog.getMerchant();
+            
             // Generate HMAC signature
             String payloadString = objectMapper.writeValueAsString(webhookLog.getPayload());
             String signature = signatureService.generateSignature(payloadString, merchant.getWebhookSecret());
@@ -117,15 +122,10 @@ public class WebhookWorker {
             // Execute with timeout
             int socketTimeoutMs = WEBHOOK_TIMEOUT_SECONDS * 1000;
             HttpResponse response = httpClient.execute(httpPost, (httpResponse) -> {
-                WebhookLog log = new WebhookLog();
-                log.setMerchant(merchant);
-                log.setEvent(job.getEvent());
-                log.setPayload(job.getPayload());
-                log.setAttempts(webhookLog.getAttempts() + 1);
-                log.setLastAttemptAt(OffsetDateTime.now());
-                
                 int statusCode = httpResponse.getCode();
-                log.setResponseCode(statusCode);
+                webhookLog.setAttempts(webhookLog.getAttempts() + 1);
+                webhookLog.setLastAttemptAt(OffsetDateTime.now());
+                webhookLog.setResponseCode(statusCode);
                 
                 // Capture response body
                 if (httpResponse.getEntity() != null) {
@@ -133,7 +133,7 @@ public class WebhookWorker {
                         String responseBody = new BufferedReader(
                                 new InputStreamReader(httpResponse.getEntity().getContent())
                         ).readLine();
-                        log.setResponseBody(responseBody);
+                        webhookLog.setResponseBody(responseBody);
                     } catch (IOException e) {
                         logger.debug("Could not read response body", e);
                     }
@@ -141,58 +141,53 @@ public class WebhookWorker {
                 
                 // Check if successful (200-299)
                 if (statusCode >= 200 && statusCode < 300) {
-                    log.setStatus("success");
+                    webhookLog.setStatus("success");
                     logger.info("Webhook delivered successfully to merchant: {}, event: {}", 
                             merchant.getId(), job.getEvent());
                 } else {
-                    log.setStatus("pending");
-                    
                     // Schedule retry if attempts < max
-                    if (log.getAttempts() < JobConstants.MAX_WEBHOOK_ATTEMPTS) {
-                        OffsetDateTime nextRetryTime = webhookService.calculateNextRetryTime(log.getAttempts());
-                        log.setNextRetryAt(nextRetryTime);
+                    if (webhookLog.getAttempts() < JobConstants.MAX_WEBHOOK_ATTEMPTS) {
+                        webhookLog.setStatus("pending");
+                        OffsetDateTime nextRetryTime = webhookService.calculateNextRetryTime(webhookLog.getAttempts());
+                        webhookLog.setNextRetryAt(nextRetryTime);
                         logger.info("Webhook delivery failed with status {}. Scheduled retry at: {}", 
                                 statusCode, nextRetryTime);
                     } else {
-                        log.setStatus("failed");
+                        webhookLog.setStatus("failed");
                         logger.warn("Webhook delivery failed after {} attempts for merchant: {}, event: {}", 
                                 JobConstants.MAX_WEBHOOK_ATTEMPTS, merchant.getId(), job.getEvent());
                     }
                 }
                 
                 // Save webhook log
-                webhookLogRepository.save(log);
+                webhookLogRepository.save(webhookLog);
                 
                 // If retry scheduled, re-enqueue job
-                if ("pending".equals(log.getStatus()) && log.getNextRetryAt() != null) {
+                if ("pending".equals(webhookLog.getStatus()) && webhookLog.getNextRetryAt() != null) {
                     // Job will be picked up by scheduler based on next_retry_at
-                    logger.info("Webhook will be retried at: {}", log.getNextRetryAt());
+                    logger.info("Webhook will be retried at: {}", webhookLog.getNextRetryAt());
                 }
                 
                 return httpResponse;
             });
             
         } catch (Exception e) {
-            logger.error("Error attempting webhook delivery to: " + merchant.getWebhookUrl(), e);
+            logger.error("Error attempting webhook delivery to: " + webhookLog.getMerchant().getWebhookUrl(), e);
             
             // Log the failed attempt
-            WebhookLog failedLog = new WebhookLog();
-            failedLog.setMerchant(merchant);
-            failedLog.setEvent(job.getEvent());
-            failedLog.setPayload(job.getPayload());
-            failedLog.setAttempts(webhookLog.getAttempts() + 1);
-            failedLog.setLastAttemptAt(OffsetDateTime.now());
-            failedLog.setResponseBody(e.getMessage());
+            webhookLog.setAttempts(webhookLog.getAttempts() + 1);
+            webhookLog.setLastAttemptAt(OffsetDateTime.now());
+            webhookLog.setResponseBody(e.getMessage());
             
-            if (failedLog.getAttempts() < JobConstants.MAX_WEBHOOK_ATTEMPTS) {
-                failedLog.setStatus("pending");
-                OffsetDateTime nextRetryTime = webhookService.calculateNextRetryTime(failedLog.getAttempts());
-                failedLog.setNextRetryAt(nextRetryTime);
+            if (webhookLog.getAttempts() < JobConstants.MAX_WEBHOOK_ATTEMPTS) {
+                webhookLog.setStatus("pending");
+                OffsetDateTime nextRetryTime = webhookService.calculateNextRetryTime(webhookLog.getAttempts());
+                webhookLog.setNextRetryAt(nextRetryTime);
             } else {
-                failedLog.setStatus("failed");
+                webhookLog.setStatus("failed");
             }
             
-            webhookLogRepository.save(failedLog);
+            webhookLogRepository.save(webhookLog);
         }
     }
 }

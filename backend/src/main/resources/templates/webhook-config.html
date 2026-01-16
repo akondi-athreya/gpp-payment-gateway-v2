@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Webhook Configuration - Payment Gateway Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #f8f9fa;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid #e0e0e0;
+      margin-bottom: 30px;
+      background: white;
+      border-radius: 8px 8px 0 0;
+      padding: 0 20px;
+    }
+
+    .nav-tabs button {
+      background: none;
+      border: none;
+      padding: 15px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .nav-tabs button.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .nav-tabs button:hover {
+      color: #667eea;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .card h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+      font-size: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+      font-size: 14px;
+    }
+
+    input[type="url"],
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    input[type="url"]:focus,
+    input[type="text"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+
+    .secret-container {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .secret-value {
+      flex: 1;
+      padding: 12px;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      word-break: break-all;
+      color: #666;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #d0d0d0;
+    }
+
+    .btn-small {
+      padding: 8px 16px;
+      font-size: 12px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-success {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .status-failed {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    thead {
+      background: #f5f5f5;
+      border-bottom: 2px solid #ddd;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    th {
+      font-weight: 600;
+      color: #667eea;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #e0e0e0;
+      transition: background 0.2s;
+    }
+
+    tbody tr:hover {
+      background: #f9f9f9;
+    }
+
+    .success-message {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .success-message.show {
+      display: block;
+    }
+
+    .error-message {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .info-box {
+      background: #e7f3ff;
+      border-left: 4px solid #667eea;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #004085;
+    }
+
+    .code-block {
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 15px 0;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 15px;
+      opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px 10px;
+      }
+
+      .card {
+        padding: 20px;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      table {
+        font-size: 12px;
+      }
+
+      th, td {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Webhook Configuration</h1>
+      <p>Configure and manage your webhook endpoints for real-time payment notifications</p>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="tab-btn active" data-tab="config" data-test-id="tab-config">Configuration</button>
+      <button class="tab-btn" data-tab="logs" data-test-id="tab-logs">Delivery Logs</button>
+      <button class="tab-btn" data-tab="test" data-test-id="tab-test">Test Webhook</button>
+    </div>
+
+    <!-- Configuration Tab -->
+    <div id="config" class="tab-content active">
+      <div class="card">
+        <h2 data-test-id="webhook-config-heading">Webhook Setup</h2>
+        
+        <div class="success-message" id="successMessage" data-test-id="success-message">
+          ✓ Configuration saved successfully
+        </div>
+
+        <div class="error-message" id="errorMessage" data-test-id="error-message"></div>
+
+        <form id="webhookForm" data-test-id="webhook-config-form">
+          <div class="form-group">
+            <label for="webhookUrl">Webhook URL</label>
+            <input 
+              type="url" 
+              id="webhookUrl" 
+              name="webhookUrl"
+              data-test-id="webhook-url-input"
+              placeholder="https://yoursite.com/webhook"
+              value="https://yoursite.com/webhook"
+            />
+            <p style="font-size: 12px; color: #999; margin-top: 6px;">
+              Must be a valid HTTPS URL. We'll send POST requests with payment events.
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label>Webhook Secret</label>
+            <div class="secret-container">
+              <div class="secret-value" data-test-id="webhook-secret" id="webhookSecret">
+                whsec_test_abc123
+              </div>
+              <button 
+                type="button" 
+                class="btn-secondary btn-small"
+                data-test-id="regenerate-secret-button"
+                onclick="regenerateSecret()"
+              >
+                Regenerate
+              </button>
+            </div>
+            <p style="font-size: 12px; color: #999; margin-top: 6px;">
+              Use this secret to verify webhook signatures in your backend
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label>Events to Subscribe</label>
+            <div style="padding: 15px; background: #f5f5f5; border-radius: 6px;">
+              <div style="margin-bottom: 10px;">
+                <input type="checkbox" id="event1" checked disabled />
+                <label for="event1" style="display: inline; margin-left: 8px; font-weight: normal;">
+                  payment.created
+                </label>
+              </div>
+              <div style="margin-bottom: 10px;">
+                <input type="checkbox" id="event2" checked disabled />
+                <label for="event2" style="display: inline; margin-left: 8px; font-weight: normal;">
+                  payment.success
+                </label>
+              </div>
+              <div style="margin-bottom: 10px;">
+                <input type="checkbox" id="event3" checked disabled />
+                <label for="event3" style="display: inline; margin-left: 8px; font-weight: normal;">
+                  payment.failed
+                </label>
+              </div>
+              <div style="margin-bottom: 10px;">
+                <input type="checkbox" id="event4" checked disabled />
+                <label for="event4" style="display: inline; margin-left: 8px; font-weight: normal;">
+                  refund.processed
+                </label>
+              </div>
+            </div>
+            <p style="font-size: 12px; color: #999; margin-top: 6px;">
+              All events are currently enabled. Custom subscriptions coming soon.
+            </p>
+          </div>
+
+          <div class="button-group">
+            <button type="submit" class="btn-primary" data-test-id="save-webhook-button">
+              Save Configuration
+            </button>
+            <button type="button" class="btn-primary" data-test-id="test-webhook-button" onclick="sendTestWebhook()">
+              Send Test Webhook
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Signature Verification</h2>
+        <div class="info-box">
+          Each webhook includes an X-Webhook-Signature header with HMAC-SHA256 signature.
+          Verify it using your webhook secret to ensure authenticity.
+        </div>
+        <p style="margin-bottom: 15px;">Example Node.js verification:</p>
+        <div class="code-block">const crypto = require('crypto');
+
+function verifyWebhook(payload, signature, secret) {
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+  
+  return signature === expectedSignature;
+}
+
+// In your webhook endpoint:
+const signature = req.headers['x-webhook-signature'];
+const isValid = verifyWebhook(req.body, signature, 'whsec_test_abc123');
+
+if (!isValid) {
+  return res.status(401).send('Invalid signature');
+}
+
+// Process webhook
+res.status(200).send('OK');
+        </div>
+      </div>
+    </div>
+
+    <!-- Logs Tab -->
+    <div id="logs" class="tab-content">
+      <div class="card">
+        <h2 data-test-id="webhook-logs-heading">Webhook Delivery Logs</h2>
+        
+        <table data-test-id="webhook-logs-table">
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Status</th>
+              <th>Attempts</th>
+              <th>Last Attempt</th>
+              <th>Response</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="logsTableBody">
+            <tr data-test-id="webhook-log-item" data-webhook-id="log_001">
+              <td data-test-id="webhook-event">payment.success</td>
+              <td>
+                <span class="status-badge status-success" data-test-id="webhook-status">
+                  SUCCESS
+                </span>
+              </td>
+              <td data-test-id="webhook-attempts">1</td>
+              <td data-test-id="webhook-last-attempt">2024-01-16 10:31:11</td>
+              <td data-test-id="webhook-response-code">200 OK</td>
+              <td>
+                <button 
+                  class="btn-secondary btn-small"
+                  data-test-id="retry-webhook-button"
+                  data-webhook-id="log_001"
+                  onclick="retryWebhook('log_001')"
+                >
+                  Retry
+                </button>
+              </td>
+            </tr>
+            <tr data-test-id="webhook-log-item" data-webhook-id="log_002">
+              <td data-test-id="webhook-event">payment.created</td>
+              <td>
+                <span class="status-badge status-success" data-test-id="webhook-status">
+                  SUCCESS
+                </span>
+              </td>
+              <td data-test-id="webhook-attempts">1</td>
+              <td data-test-id="webhook-last-attempt">2024-01-16 10:30:45</td>
+              <td data-test-id="webhook-response-code">200 OK</td>
+              <td>
+                <button 
+                  class="btn-secondary btn-small"
+                  data-test-id="retry-webhook-button"
+                  data-webhook-id="log_002"
+                  onclick="retryWebhook('log_002')"
+                >
+                  Retry
+                </button>
+              </td>
+            </tr>
+            <tr data-test-id="webhook-log-item" data-webhook-id="log_003">
+              <td data-test-id="webhook-event">refund.processed</td>
+              <td>
+                <span class="status-badge status-pending" data-test-id="webhook-status">
+                  PENDING
+                </span>
+              </td>
+              <td data-test-id="webhook-attempts">2</td>
+              <td data-test-id="webhook-last-attempt">2024-01-16 10:15:22</td>
+              <td data-test-id="webhook-response-code">500 Error</td>
+              <td>
+                <button 
+                  class="btn-secondary btn-small"
+                  data-test-id="retry-webhook-button"
+                  data-webhook-id="log_003"
+                  onclick="retryWebhook('log_003')"
+                >
+                  Retry
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Test Tab -->
+    <div id="test" class="tab-content">
+      <div class="card">
+        <h2 data-test-id="test-webhook-heading">Send Test Webhook</h2>
+        
+        <div class="info-box">
+          Send a test webhook to your configured endpoint to verify integration.
+          The test payload mimics a real payment.success event.
+        </div>
+
+        <form id="testForm" data-test-id="test-webhook-form">
+          <div class="form-group">
+            <label for="testEvent">Event Type</label>
+            <select id="testEvent" data-test-id="test-event-select" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
+              <option value="payment.success">payment.success</option>
+              <option value="payment.created">payment.created</option>
+              <option value="payment.failed">payment.failed</option>
+              <option value="refund.processed">refund.processed</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Test Payload</label>
+            <textarea id="testPayload" data-test-id="test-payload-textarea" readonly>{
+  "event": "payment.success",
+  "timestamp": 1705421471,
+  "data": {
+    "payment": {
+      "id": "pay_TEST123456789ab",
+      "order_id": "order_XYZ789",
+      "amount": 50000,
+      "currency": "INR",
+      "method": "upi",
+      "vpa": "user@paytm",
+      "status": "success",
+      "created_at": "2024-01-16T10:31:00Z"
+    }
+  }
+}</textarea>
+          </div>
+
+          <div class="button-group">
+            <button type="submit" class="btn-primary" data-test-id="send-test-button">
+              Send Test Webhook
+            </button>
+          </div>
+        </form>
+
+        <div id="testResult" style="margin-top: 20px; display: none;">
+          <h3 style="margin-bottom: 15px;">Response</h3>
+          <div class="code-block" id="testResultContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const tabName = this.dataset.tab;
+        
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+          tab.classList.remove('active');
+        });
+        
+        // Remove active class from all buttons
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.remove('active');
+        });
+        
+        // Show selected tab
+        document.getElementById(tabName).classList.add('active');
+        this.classList.add('active');
+      });
+    });
+
+    // Form submission
+    document.getElementById('webhookForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const url = document.getElementById('webhookUrl').value;
+      showSuccess('Webhook configuration saved: ' + url);
+      setTimeout(() => hideMessages(), 3000);
+    });
+
+    document.getElementById('testForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      sendTestWebhook();
+    });
+
+    function showSuccess(message) {
+      const msg = document.getElementById('successMessage');
+      msg.textContent = '✓ ' + message;
+      msg.classList.add('show');
+    }
+
+    function showError(message) {
+      const msg = document.getElementById('errorMessage');
+      msg.textContent = '✗ ' + message;
+      msg.classList.add('show');
+    }
+
+    function hideMessages() {
+      document.getElementById('successMessage').classList.remove('show');
+      document.getElementById('errorMessage').classList.remove('show');
+    }
+
+    function regenerateSecret() {
+      const newSecret = 'whsec_' + Math.random().toString(36).substring(2, 15);
+      document.getElementById('webhookSecret').textContent = newSecret;
+      showSuccess('Webhook secret regenerated');
+      setTimeout(() => hideMessages(), 3000);
+    }
+
+    function sendTestWebhook() {
+      showSuccess('Test webhook sent to your endpoint');
+      setTimeout(() => hideMessages(), 3000);
+    }
+
+    function retryWebhook(webhookId) {
+      showSuccess('Webhook retry scheduled: ' + webhookId);
+      setTimeout(() => hideMessages(), 3000);
+    }
+  </script>
+</body>
+</html>

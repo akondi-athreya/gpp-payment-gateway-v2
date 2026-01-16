@@ -1,106 +1,616 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>API Documentation</title>
-    <style>
-        body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
-        header { background: linear-gradient(135deg, #0ea5e9, #2563eb); color: #fff; padding: 18px 24px; }
-        h1 { margin: 0; font-size: 22px; }
-        main { padding: 24px; max-width: 1000px; margin: 0 auto; }
-        .section { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; box-shadow: 0 6px 24px rgba(0,0,0,0.04); margin-bottom: 16px; }
-        pre { background: #0b1222; color: #d1e7ff; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
-        code { font-family: "SFMono-Regular", Consolas, monospace; }
-        h2 { margin-top: 0; font-size: 18px; }
-        .muted { color: #6b7280; font-size: 13px; }
-        ul { padding-left: 18px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Documentation - Payment Gateway</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      border-radius: 12px;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+
+    .section {
+      background: white;
+      padding: 30px;
+      margin-bottom: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .section h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .section h3 {
+      color: #333;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .code-block {
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 15px 0;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .code-block code {
+      color: #333;
+    }
+
+    .api-endpoint {
+      background: #f9fafb;
+      padding: 15px;
+      border-left: 4px solid #667eea;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+
+    .method-post {
+      border-left-color: #007bff;
+    }
+
+    .method-get {
+      border-left-color: #28a745;
+    }
+
+    .method-put {
+      border-left-color: #ffc107;
+    }
+
+    .method-label {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 12px;
+      margin-right: 10px;
+    }
+
+    .method-label.post {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .method-label.get {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .method-label.put {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .endpoint-path {
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      color: #333;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+
+    th {
+      background: #f5f5f5;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid #ddd;
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .example-tab {
+      display: none;
+      margin-top: 15px;
+    }
+
+    .example-tab.active {
+      display: block;
+    }
+
+    .tab-buttons {
+      display: flex;
+      gap: 10px;
+      margin: 15px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #666;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .tab-btn:hover {
+      color: #667eea;
+    }
+
+    .success-box {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+      color: #155724;
+    }
+
+    .info-box {
+      background: #d1ecf1;
+      border-left: 4px solid #17a2b8;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+      color: #0c5460;
+    }
+
+    .feature-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .feature-list li {
+      padding: 10px;
+      background: #f9fafb;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      border-left: 3px solid #667eea;
+    }
+
+    .feature-list li:before {
+      content: "✓ ";
+      color: #28a745;
+      font-weight: bold;
+      margin-right: 8px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .nav-link {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .nav-link:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+      }
+
+      .header {
+        padding: 20px;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .nav-links {
+        flex-direction: column;
+      }
+    }
+  </style>
 </head>
 <body>
-<header>
-    <h1>API Documentation</h1>
-</header>
-<main>
-    <div class="section">
-        <h2>1. Create Order</h2>
-        <p class="muted">Create an order before initiating payments.</p>
-        <pre><code>curl -X POST https://your-domain/api/v1/orders \ \
-  -H "Content-Type: application/json" \ \
-  -d '{
-    "order_id": "ord_123",
-    "amount": 5000,
-    "currency": "INR",
-    "description": "Test order"
-  }'</code></pre>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🔐 Payment Gateway API Documentation</h1>
+      <p>Complete guide for integrating with our payment processing platform</p>
     </div>
 
-    <div class="section">
-        <h2>2. Create Payment (Async)</h2>
-        <p class="muted">Requires X-Api-Key and X-Api-Secret headers.</p>
-        <pre><code>curl -X POST https://your-domain/api/v1/payments \ \
-  -H "Content-Type: application/json" \ \
-  -H "X-Api-Key: &lt;api_key&gt;" \ \
-  -H "X-Api-Secret: &lt;api_secret&gt;" \ \
-  -H "Idempotency-Key: &lt;unique_key&gt;" \ \
-  -d '{
-    "order_id": "ord_123",
-    "method": "upi",
-    "vpa": "user@upi"
-  }'</code></pre>
+    <!-- Quick Navigation -->
+    <div class="nav-links" data-test-id="nav-links">
+      <a href="#sdk-integration" class="nav-link">SDK Integration</a>
+      <a href="#api-endpoints" class="nav-link">API Endpoints</a>
+      <a href="#webhook-setup" class="nav-link">Webhooks</a>
+      <a href="#testing" class="nav-link">Testing</a>
     </div>
 
-    <div class="section">
-        <h2>3. Capture Payment</h2>
-        <pre><code>curl -X POST https://your-domain/api/v1/payments/pay_abc/capture \
-  -H "X-Api-Key: &lt;api_key&gt;" \
-  -H "X-Api-Secret: &lt;api_secret&gt;"</code></pre>
+    <!-- SDK Integration Section -->
+    <div class="section" id="sdk-integration" data-test-id="sdk-section">
+      <h2>SDK Integration</h2>
+      
+      <h3>Quick Start</h3>
+      <p>Embed our payment SDK in your website to accept payments in minutes.</p>
+
+      <h3>1. Add Script Tag</h3>
+      <p>Include the Payment Gateway SDK in your HTML:</p>
+      <div class="code-block"><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Checkout&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;button id="pay-button"&gt;Pay Now&lt;/button&gt;
+  
+  &lt;script src="http://localhost:3001/checkout.js"&gt;&lt;/script&gt;
+  &lt;script&gt;
+    document.getElementById('pay-button').addEventListener('click', () =&gt; {
+      const gateway = new PaymentGateway({
+        key: 'your_api_key_here',
+        orderId: 'order_123456',
+        onSuccess: (data) =&gt; {
+          console.log('Payment successful:', data);
+        },
+        onFailure: (error) =&gt; {
+          console.error('Payment failed:', error);
+        }
+      });
+      gateway.open();
+    });
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></div>
+
+      <h3>2. Initialize Payment Gateway</h3>
+      <p>Create a PaymentGateway instance with your configuration:</p>
+      <div class="code-block"><code>const gateway = new PaymentGateway({
+  key: 'your_api_key',          // Required: Your API key
+  orderId: 'order_123456',      // Required: Order ID to process
+  onSuccess: handleSuccess,      // Optional: Success callback
+  onFailure: handleFailure,      // Optional: Failure callback
+  onClose: handleClose           // Optional: Modal close callback
+});</code></div>
+
+      <h3>3. Handle Events</h3>
+      <div class="code-block"><code>function handleSuccess(data) {
+  console.log('Payment successful!');
+  console.log('Payment ID:', data.paymentId);
+  console.log('Order ID:', data.orderId);
+  console.log('Amount:', data.amount);
+  // Update your database or show success page
+}
+
+function handleFailure(error) {
+  console.error('Payment failed:', error.message);
+  // Show error to user
+}
+
+function handleClose() {
+  console.log('Payment modal closed');
+}</code></div>
+
+      <h3>4. Test in Development</h3>
+      <div class="info-box">
+        <strong>📝 Test API Key:</strong> Use <code>key_test_abc123</code> for testing<br>
+        <strong>💳 Test Card:</strong> 4111 1111 1111 1111 (any future date, any CVV)
+      </div>
     </div>
 
-    <div class="section">
-        <h2>4. Refund Payment</h2>
-        <pre><code>curl -X POST https://your-domain/api/v1/payments/pay_abc/refunds \
-  -H "X-Api-Key: &lt;api_key&gt;" \
-  -H "X-Api-Secret: &lt;api_secret&gt;" \
+    <!-- API Endpoints Section -->
+    <div class="section" id="api-endpoints" data-test-id="api-section">
+      <h2>API Endpoints</h2>
+
+      <!-- Create Order -->
+      <div class="api-endpoint method-post">
+        <span class="method-label post">POST</span>
+        <span class="endpoint-path">/api/v1/orders</span>
+      </div>
+      <p><strong>Create a new order</strong></p>
+      
+      <h3>Request Body</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>amount</code></td>
+            <td>integer</td>
+            <td>Amount in paise (e.g., 50000 for ₹500)</td>
+          </tr>
+          <tr>
+            <td><code>currency</code></td>
+            <td>string</td>
+            <td>Currency code (default: INR)</td>
+          </tr>
+          <tr>
+            <td><code>reference_id</code></td>
+            <td>string</td>
+            <td>Your internal reference ID</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="tab-buttons">
+        <button class="tab-btn active" onclick="showTab(this, 'create-order-request')">Request</button>
+        <button class="tab-btn" onclick="showTab(this, 'create-order-response')">Response</button>
+      </div>
+
+      <div id="create-order-request" class="example-tab active">
+        <div class="code-block"><code>curl -X POST http://localhost:8000/api/v1/orders \
   -H "Content-Type: application/json" \
+  -H "X-Api-Key: key_test_abc123" \
+  -H "X-Api-Secret: secret_test_xyz789" \
   -d '{
-    "amount": 2000,
-    "reason": "customer_request"
-  }'</code></pre>
+    "amount": 50000,
+    "currency": "INR",
+    "reference_id": "ref_123456"
+  }'</code></div>
+      </div>
+
+      <div id="create-order-response" class="example-tab">
+        <div class="success-box">✓ Status 201 Created</div>
+        <div class="code-block"><code>{
+  "id": "order_1234567890",
+  "amount": 50000,
+  "currency": "INR",
+  "status": "pending",
+  "reference_id": "ref_123456",
+  "created_at": "2024-01-15T10:30:00Z"
+}</code></div>
+      </div>
+
+      <!-- Create Payment -->
+      <div class="api-endpoint method-post" style="margin-top: 30px;">
+        <span class="method-label post">POST</span>
+        <span class="endpoint-path">/api/v1/payments</span>
+      </div>
+      <p><strong>Process a payment</strong></p>
+
+      <h3>Request Body</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>order_id</code></td>
+            <td>string</td>
+            <td>ID of the order</td>
+          </tr>
+          <tr>
+            <td><code>method</code></td>
+            <td>string</td>
+            <td>Payment method: <code>upi</code> or <code>card</code></td>
+          </tr>
+          <tr>
+            <td><code>vpa</code></td>
+            <td>string</td>
+            <td>UPI virtual payment address (if method=upi)</td>
+          </tr>
+          <tr>
+            <td><code>card</code></td>
+            <td>object</td>
+            <td>Card details (if method=card)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="tab-buttons">
+        <button class="tab-btn active" onclick="showTab(this, 'create-payment-request')">Request</button>
+        <button class="tab-btn" onclick="showTab(this, 'create-payment-response')">Response</button>
+      </div>
+
+      <div id="create-payment-request" class="example-tab active">
+        <div class="code-block"><code>curl -X POST http://localhost:8000/api/v1/payments \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: key_test_abc123" \
+  -H "X-Api-Secret: secret_test_xyz789" \
+  -d '{
+    "order_id": "order_1234567890",
+    "method": "upi",
+    "vpa": "user@paytm"
+  }'</code></div>
+      </div>
+
+      <div id="create-payment-response" class="example-tab">
+        <div class="success-box">✓ Status 201 Created</div>
+        <div class="code-block"><code>{
+  "id": "payment_9876543210",
+  "order_id": "order_1234567890",
+  "amount": 50000,
+  "currency": "INR",
+  "status": "pending",
+  "method": "upi",
+  "created_at": "2024-01-15T10:35:00Z"
+}</code></div>
+      </div>
+
+      <!-- Get Payment -->
+      <div class="api-endpoint method-get" style="margin-top: 30px;">
+        <span class="method-label get">GET</span>
+        <span class="endpoint-path">/api/v1/payments/:paymentId</span>
+      </div>
+      <p><strong>Check payment status</strong></p>
+
+      <div class="code-block"><code>curl -X GET http://localhost:8000/api/v1/payments/payment_9876543210 \
+  -H "X-Api-Key: key_test_abc123" \
+  -H "X-Api-Secret: secret_test_xyz789"</code></div>
+
+      <!-- Refund Payment -->
+      <div class="api-endpoint method-put" style="margin-top: 30px;">
+        <span class="method-label put">PUT</span>
+        <span class="endpoint-path">/api/v1/payments/:paymentId/refund</span>
+      </div>
+      <p><strong>Refund a payment</strong></p>
+
+      <div class="code-block"><code>curl -X PUT http://localhost:8000/api/v1/payments/payment_9876543210/refund \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: key_test_abc123" \
+  -H "X-Api-Secret: secret_test_xyz789" \
+  -d '{
+    "reason": "Customer requested refund"
+  }'</code></div>
     </div>
 
+    <!-- Webhook Setup Section -->
+    <div class="section" id="webhook-setup" data-test-id="webhook-section">
+      <h2>Webhook Setup</h2>
+
+      <p>Webhooks notify your application about payment events in real-time.</p>
+
+      <h3>Webhook Events</h3>
+      <ul class="feature-list">
+        <li><code>payment.success</code> - Payment completed successfully</li>
+        <li><code>payment.failed</code> - Payment processing failed</li>
+        <li><code>payment.refunded</code> - Refund processed</li>
+      </ul>
+
+      <h3>Webhook Payload Example</h3>
+      <div class="code-block"><code>{
+  "event": "payment.success",
+  "data": {
+    "payment_id": "payment_9876543210",
+    "order_id": "order_1234567890",
+    "amount": 50000,
+    "status": "success",
+    "method": "upi"
+  },
+  "timestamp": "2024-01-15T10:40:00Z",
+  "signature": "base64_encoded_hmac_sha256"
+}</code></div>
+
+      <h3>Verify Webhook Signature</h3>
+      <div class="code-block"><code>const crypto = require('crypto');
+
+function verifyWebhook(payload, signature, webhookSecret) {
+  const hash = crypto
+    .createHmac('sha256', webhookSecret)
+    .update(JSON.stringify(payload))
+    .digest('base64');
+  
+  return hash === signature;
+}</code></div>
+
+      <div class="success-box">
+        <strong>✓ Signature Verification:</strong> Always verify webhook signatures to ensure authenticity
+      </div>
+    </div>
+
+    <!-- Testing Section -->
+    <div class="section" id="testing" data-test-id="testing-section">
+      <h2>Testing</h2>
+
+      <h3>Test Flow</h3>
+      <ol style="padding-left: 20px;">
+        <li>Create an order using the Create Order endpoint</li>
+        <li>Initialize Payment Gateway SDK with the order ID</li>
+        <li>Use test payment method: <code>4111 1111 1111 1111</code> or UPI: <code>user@paytm</code></li>
+        <li>Check payment status using Get Payment endpoint</li>
+        <li>Test webhook delivery on Webhook Configuration page</li>
+      </ol>
+
+      <div class="info-box">
+        <strong>🧪 Testing Credentials:</strong><br>
+        API Key: <code>key_test_abc123</code><br>
+        API Secret: <code>secret_test_xyz789</code>
+      </div>
+    </div>
+
+    <!-- Support Section -->
     <div class="section">
-        <h2>5. SDK Integration</h2>
-        <p class="muted">Embed a simple checkout snippet.</p>
-        <pre><code>&lt;script src="https://your-domain/sdk.js"&gt;&lt;/script&gt;
-&lt;script&gt;
-  const checkout = new PaymentGateway({ apiKey: '&lt;api_key&gt;' });
-  checkout.pay({ orderId: 'ord_123', amount: 5000, currency: 'INR' });
-&lt;/script&gt;</code></pre>
+      <h2>Support & Resources</h2>
+      <ul class="feature-list">
+        <li>Review error codes and status codes in the API Reference</li>
+        <li>Check webhook logs in the Dashboard</li>
+        <li>Enable request/response logging for debugging</li>
+        <li>Test webhook delivery with the Webhook Configuration tool</li>
+      </ul>
     </div>
+  </div>
 
-    <div class="section">
-        <h2>6. Webhook Verification</h2>
-        <p class="muted">Verify signature using HMAC-SHA256 and your webhook_secret.</p>
-        <pre><code>const crypto = require('crypto');
-
-function verifySignature(body, signature, secret) {
-  const digest = crypto
-    .createHmac('sha256', secret)
-    .update(body, 'utf8')
-    .digest('hex');
-  return digest === signature;
-}</code></pre>
-    </div>
-
-    <div class="section">
-        <h2>7. Webhook Events</h2>
-        <ul>
-            <li><strong>payment.success</strong> — Fired when a payment succeeds</li>
-            <li><strong>payment.failed</strong> — Fired when a payment fails</li>
-            <li><strong>refund.processed</strong> — Fired when a refund is processed</li>
-        </ul>
-    </div>
-</main>
+  <script>
+    function showTab(button, tabId) {
+      // Hide all examples in the same group
+      const parent = button.parentElement.nextElementSibling;
+      let current = parent;
+      while (current && !current.classList.contains('example-tab')) {
+        current = current.nextElementSibling;
+      }
+      
+      // Hide all in this section
+      let section = button.closest('.section');
+      section.querySelectorAll('.example-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Remove active from all buttons in this group
+      button.parentElement.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // Show selected tab and mark button as active
+      document.getElementById(tabId).classList.add('active');
+      button.classList.add('active');
+    }
+  </script>
 </body>
 </html>

@@ -5,6 +5,7 @@ import java.util.List;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 @Entity
 @Table(name = "orders", indexes = {
@@ -41,6 +42,7 @@ public class Order {
         updatable = false,
         columnDefinition = "TIMESTAMPTZ"
     )
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     private OffsetDateTime createdAt;
 
     @Column(
@@ -48,6 +50,7 @@ public class Order {
         nullable = false,
         columnDefinition = "TIMESTAMPTZ"
     )
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     private OffsetDateTime updatedAt;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -1,0 +1,52 @@
+# Project Root .gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Dependencies
+node_modules/
+venv/
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+build/
+dist/
+target/
+*.class
+*.jar
+*.war
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+*.pid
+*.seed
+*.pid.lock
+
+# Documentation
+*.pdf
+
+# OS files
+Thumbs.db
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Misc
+*.swp
+.AppleDouble
+.LSOverride
+
+# Test artifacts
+test-reports/
+.mocha_output/
