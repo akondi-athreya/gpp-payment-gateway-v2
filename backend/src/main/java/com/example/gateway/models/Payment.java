@@ -53,6 +53,9 @@ public class Payment {
     @Column(name = "error_description")
     private String errorDescription;
 
+    @Column(name = "captured", nullable = false)
+    private Boolean captured = false;
+
     @Column(
         name = "created_at",
         nullable = false,
@@ -73,7 +76,7 @@ public class Payment {
 
     public Payment(String id, Order order, Merchant merchant, int amount, String currency, PaymentMethod method,
             String status, String vpa, CardNetwork cardNetwork, String cardLast4, String errorCode,
-            String errorDescription, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+            String errorDescription, Boolean captured, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         this.id = id;
         this.order = order;
         this.merchant = merchant;
@@ -86,6 +89,7 @@ public class Payment {
         this.cardLast4 = cardLast4;
         this.errorCode = errorCode;
         this.errorDescription = errorDescription;
+        this.captured = captured;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -198,6 +202,14 @@ public class Payment {
         this.errorDescription = errorDescription;
     }
 
+    public Boolean getCaptured() {
+        return captured;
+    }
+
+    public void setCaptured(Boolean captured) {
+        this.captured = captured;
+    }
+
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
@@ -220,7 +232,7 @@ public class Payment {
                 + ", merchant=" + (merchant != null ? merchant.getId() : null) + ", amount=" + amount
                 + ", currency=" + currency + ", method=" + method + ", status=" + status + ", vpa=" + vpa
                 + ", cardNetwork=" + cardNetwork + ", cardLast4=" + cardLast4 + ", errorCode=" + errorCode
-                + ", errorDescription=" + errorDescription + ", createdAt=" + createdAt + ", updatedAt=" + updatedAt
+                + ", errorDescription=" + errorDescription + ", captured=" + captured + ", createdAt=" + createdAt + ", updatedAt=" + updatedAt
                 + "]";
     }
 

@@ -34,6 +34,9 @@ public class Merchant {
     @Column(name = "webhook_url", columnDefinition = "TEXT")
     private String webhookUrl;
 
+    @Column(name = "webhook_secret", length = 64)
+    private String webhookSecret;
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
@@ -50,13 +53,14 @@ public class Merchant {
     private List<Payment> payments;
 
     public Merchant(UUID id, String name, String email, String apiKey, String apiSecret, String webhookUrl,
-            Boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+            String webhookSecret, Boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.apiKey = apiKey;
         this.apiSecret = apiSecret;
         this.webhookUrl = webhookUrl;
+        this.webhookSecret = webhookSecret;
         this.isActive = isActive;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -110,6 +114,14 @@ public class Merchant {
         this.webhookUrl = webhookUrl;
     }
 
+    public String getWebhookSecret() {
+        return webhookSecret;
+    }
+
+    public void setWebhookSecret(String webhookSecret) {
+        this.webhookSecret = webhookSecret;
+    }
+
     public Boolean getIsActive() {
         return isActive;
     }
@@ -153,7 +165,7 @@ public class Merchant {
     @Override
     public String toString() {
         return "Merchant [id=" + id + ", name=" + name + ", email=" + email + ", apiKey=" + apiKey + ", apiSecret="
-                + apiSecret + ", webhookUrl=" + webhookUrl + ", isActive=" + isActive + ", createdAt=" + createdAt
+                + apiSecret + ", webhookUrl=" + webhookUrl + ", webhookSecret=" + webhookSecret + ", isActive=" + isActive + ", createdAt=" + createdAt
                 + ", updatedAt=" + updatedAt + "]";
     }
 
