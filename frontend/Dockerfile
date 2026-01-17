@@ -1,6 +1,13 @@
+FROM node:18-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . ./
+RUN npm run build
+
 FROM nginx:alpine
 
-# Copy nginx config
+# Nginx config with API proxy to backend service inside Docker network
 RUN echo 'server { \
     listen 80; \
     server_name _; \
@@ -18,15 +25,21 @@ RUN echo 'server { \
         proxy_set_header X-Forwarded-Proto $scheme; \
     } \
     \
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ { \
+    location /health { \
+        proxy_pass http://api:8000; \
+        proxy_set_header X-Real-IP $remote_addr; \
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
+        proxy_set_header X-Forwarded-Proto $scheme; \
+    } \
+    \
+    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg)$ { \
         expires 1d; \
         add_header Cache-Control "public, immutable"; \
     } \
 }' > /etc/nginx/conf.d/default.conf
 
-# Copy dashboard files
-COPY index.html /usr/share/nginx/html/
+# Copy built assets
+COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80
-
 CMD ["nginx", "-g", "daemon off;"]

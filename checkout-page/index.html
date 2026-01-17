@@ -180,6 +180,7 @@
           id="orderId"
           type="text"
           placeholder="order_123456"
+          data-test-id="demo-order-id-input"
           required
         />
       </div>
@@ -191,6 +192,7 @@
           type="number"
           placeholder="500"
           min="1"
+          data-test-id="demo-amount-input"
           required
         />
       </div>
@@ -205,6 +207,7 @@
           id="name"
           type="text"
           placeholder="John Doe"
+          data-test-id="demo-customer-name-input"
           required
         />
       </div>
@@ -215,6 +218,7 @@
           id="email"
           type="email"
           placeholder="john@example.com"
+          data-test-id="demo-customer-email-input"
           required
         />
       </div>
@@ -225,12 +229,13 @@
           id="phone"
           type="tel"
           placeholder="+91 98765 43210"
+          data-test-id="demo-customer-phone-input"
           required
         />
       </div>
     </div>
 
-    <button id="payButton" onclick="handlePayment()">
+    <button id="payButton" data-test-id="demo-pay-button" onclick="handlePayment()">
       Pay with Payment Gateway
     </button>
 

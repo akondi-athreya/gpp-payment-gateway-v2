@@ -197,12 +197,13 @@ export default function CheckoutForm() {
   }
 
   return (
-    <div className="checkout-container">
+    <div className="checkout-container" data-test-id="checkout-form">
       <div className="checkout-header">
         <h1>Complete Payment</h1>
         <button
           type="button"
           className="header-close"
+          data-test-id="checkout-close-button"
           onClick={handleClose}
           title="Close payment form"
         >
@@ -212,18 +213,18 @@ export default function CheckoutForm() {
 
       {order && (
         <>
-          <div className="order-summary">
+          <div className="order-summary" data-test-id="order-summary">
             <div className="summary-row">
               <span>Order ID:</span>
-              <strong>{order.id}</strong>
+              <strong data-test-id="order-id">{order.id}</strong>
             </div>
             <div className="summary-row">
               <span>Amount:</span>
-              <strong className="amount">₹{(order.amount / 100).toLocaleString('en-IN')}</strong>
+              <strong className="amount" data-test-id="order-amount">₹{(order.amount / 100).toLocaleString('en-IN')}</strong>
             </div>
             <div className="summary-row">
               <span>Currency:</span>
-              <strong>{order.currency}</strong>
+              <strong data-test-id="order-currency">{order.currency}</strong>
             </div>
           </div>
 
@@ -231,11 +232,12 @@ export default function CheckoutForm() {
             {/* Payment Method Selection */}
             <div className="form-section">
               <label>Payment Method</label>
-              <div className="method-tabs">
+              <div className="method-tabs" data-test-id="payment-method-tabs">
                 <button
                   type="button"
                   className={`tab ${method === 'upi' ? 'active' : ''}`}
                   onClick={() => setMethod('upi')}
+                  data-test-id="method-upi"
                 >
                   UPI
                 </button>
@@ -243,6 +245,7 @@ export default function CheckoutForm() {
                   type="button"
                   className={`tab ${method === 'card' ? 'active' : ''}`}
                   onClick={() => setMethod('card')}
+                  data-test-id="method-card"
                 >
                   Card
                 </button>
@@ -251,7 +254,7 @@ export default function CheckoutForm() {
 
             {/* UPI Form */}
             {method === 'upi' && (
-              <div className="form-section">
+              <div className="form-section" data-test-id="upi-form">
                 <label htmlFor="vpa">UPI Address (VPA)</label>
                 <input
                   id="vpa"
@@ -259,6 +262,7 @@ export default function CheckoutForm() {
                   placeholder="user@paytm"
                   value={formData.vpa}
                   onChange={(e) => setFormData({ ...formData, vpa: e.target.value })}
+                  data-test-id="upi-vpa-input"
                   required
                   disabled={submitting}
                 />
@@ -268,7 +272,7 @@ export default function CheckoutForm() {
 
             {/* Card Form */}
             {method === 'card' && (
-              <div className="form-section">
+              <div className="form-section" data-test-id="card-form">
                 <label htmlFor="cardNumber">Card Number</label>
                 <input
                   id="cardNumber"
@@ -276,6 +280,7 @@ export default function CheckoutForm() {
                   placeholder="4111 1111 1111 1111"
                   value={formData.cardNumber}
                   onChange={(e) => setFormData({ ...formData, cardNumber: e.target.value })}
+                  data-test-id="card-number-input"
                   maxLength="19"
                   required
                   disabled={submitting}
@@ -292,6 +297,7 @@ export default function CheckoutForm() {
                       max="12"
                       value={formData.expiryMonth}
                       onChange={(e) => setFormData({ ...formData, expiryMonth: e.target.value })}
+                      data-test-id="card-expiry-month-input"
                       required
                       disabled={submitting}
                     />
@@ -304,6 +310,7 @@ export default function CheckoutForm() {
                       placeholder="YYYY"
                       value={formData.expiryYear}
                       onChange={(e) => setFormData({ ...formData, expiryYear: e.target.value })}
+                      data-test-id="card-expiry-year-input"
                       required
                       disabled={submitting}
                     />
@@ -318,6 +325,7 @@ export default function CheckoutForm() {
                   maxLength="4"
                   value={formData.cvv}
                   onChange={(e) => setFormData({ ...formData, cvv: e.target.value })}
+                  data-test-id="card-cvv-input"
                   required
                   disabled={submitting}
                 />
@@ -329,6 +337,7 @@ export default function CheckoutForm() {
                   placeholder="Full Name"
                   value={formData.holderName}
                   onChange={(e) => setFormData({ ...formData, holderName: e.target.value })}
+                  data-test-id="card-holder-name-input"
                   required
                   disabled={submitting}
                 />
@@ -336,7 +345,7 @@ export default function CheckoutForm() {
             )}
 
             {error && (
-              <div className="error-alert">
+              <div className="error-alert" data-test-id="payment-error">
                 <p>❌ {error}</p>
               </div>
             )}
@@ -345,6 +354,7 @@ export default function CheckoutForm() {
             <button
               type="submit"
               className="submit-btn"
+              data-test-id="submit-payment-button"
               disabled={submitting}
             >
               {submitting ? 'Processing...' : `Pay ₹${(order.amount / 100).toLocaleString('en-IN')}`}

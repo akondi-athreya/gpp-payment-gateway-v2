@@ -42,7 +42,7 @@ public class HealthController {
     }
 
     @GetMapping("/health")
-    public ResponseEntity<Map<String, String>> healthController() {
+    public ResponseEntity<Map<String, Object>> healthController() {
         String databaseStatus = checkDatabase();
         String redisStatus = checkRedis();
         String workerStatus = checkWorker();
@@ -52,15 +52,41 @@ public class HealthController {
         boolean redisOk = "connected".equals(redisStatus) || (redisOptional && !"connected".equals(redisStatus));
         boolean workerOk = "running".equals(workerStatus) || (workerOptional && !"running".equals(workerStatus));
 
-        Map<String, String> response = new LinkedHashMap<>();
+        // Get application uptime
+        long uptime = getApplicationUptime();
+        String version = getApplicationVersion();
+        String lastHealthCheck = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"))
+            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+
+        Map<String, Object> response = new LinkedHashMap<>();
         response.put("status", ready && databaseOk && redisOk && workerOk ? "healthy" : "unhealthy");
         response.put("database", databaseStatus);
         response.put("redis", redisStatus);
-        response.put("worker", workerStatus);
-        response.put("timestamp", ZonedDateTime.now(ZoneId.of("Asia/Kolkata"))
-            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        response.put("worker_service", workerStatus);
+        response.put("version", version);
+        response.put("uptime", uptime);
+        response.put("last_health_check", lastHealthCheck);
+        response.put("timestamp", lastHealthCheck);
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    private long getApplicationUptime() {
+        try {
+            // Get ManagementFactory to retrieve uptime from the JVM
+            return java.lang.management.ManagementFactory.getRuntimeMXBean().getUptime() / 1000;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private String getApplicationVersion() {
+        try {
+            String version = getClass().getPackage().getImplementationVersion();
+            return version != null ? version : "1.0.0";
+        } catch (Exception e) {
+            return "1.0.0";
+        }
     }
 
     private String checkDatabase() {

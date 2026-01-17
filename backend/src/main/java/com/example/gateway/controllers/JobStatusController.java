@@ -28,12 +28,18 @@ public class JobStatusController {
             long completedCount = jobService.getCompletedJobsCount();
             long failedCount = jobService.getFailedJobsCount();
             
+            // Calculate total jobs and success rate
+            long totalJobs = pendingCount + processingCount + completedCount + failedCount;
+            double successRate = totalJobs > 0 ? (double) completedCount / totalJobs : 0.0;
+            
             // Build response
             Map<String, Object> response = new HashMap<>();
             response.put("pending", pendingCount);
             response.put("processing", processingCount);
             response.put("completed", completedCount);
             response.put("failed", failedCount);
+            response.put("total_jobs", totalJobs);
+            response.put("success_rate", successRate);
             response.put("worker_status", "running");
             
             return ResponseEntity.status(HttpStatus.OK).body(response);
